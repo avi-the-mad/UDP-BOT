@@ -6,10 +6,42 @@ Script to open 2 UDP ports
 	1. For sending the control data
 	2. Recieving the sensor data
 '''
-
+import sys, termios, atexit
 from socket import *
 import time
-import getch
+import sys
+from select import select
+
+def kbhit():
+	dr,dw,de = select([sys.stdin], [], [], 0)
+	return dr <> []
+
+# save the terminal settings
+fd = sys.stdin.fileno()
+new_term = termios.tcgetattr(fd)
+old_term = termios.tcgetattr(fd)
+
+# new terminal setting unbuffered
+new_term[3] = (new_term[3] & ~termios.ICANON & ~termios.ECHO)
+
+# switch to normal terminal
+def set_normal_term():
+    termios.tcsetattr(fd, termios.TCSAFLUSH, old_term)
+
+# switch to unbuffered terminal
+def set_curses_term():
+    termios.tcsetattr(fd, termios.TCSAFLUSH, new_term)
+
+def putch(ch):
+    sys.stdout.write(ch)
+
+def getch():
+    return sys.stdin.read(1)
+
+def getche():
+    ch = getch()
+    putch(ch)
+    return ch
 
 # define the control ports in BOT
 # TODO
@@ -28,18 +60,28 @@ sensorPort = 2500
 sensorSocket = socket(AF_INET, SOCK_DGRAM)
 sensorSocket.bind(('', sensorPort))
 
+atexit.register(set_normal_term)
+set_curses_term()
+
 # continuously stream control data, and recieve sensor data
 while 1:
 	bef = time.time()
 	# send control data to control port of bot
 	# get the keystroke
-	key_stroke = getch.getch()
-
-	controlSocket.sendto(bytes(key_stroke, 'ascii'), (BOT_name, BOT_control))
-	print ('sent control data')
+	key_stroke = 'empty'
+	if kbhit():
+		print ('u typed somethjinbg')
+		key_stroke = getch()
+		controlSocket.sendto(bytes(key_stroke), (BOT_name, BOT_control))
+	else:
+		controlSocket.sendto(bytes('empty'), (BOT_name, BOT_control))
+	# print ('sent control data')
 	# recieve sensor data from sensor port
 	message, sensorAddress = sensorSocket.recvfrom(2048)
-	print ('Sensor data as follows:')
+	# print ('Sensor data as follows:')
 	print (message.decode('ascii'), 'from: ', sensorAddress)
 	after = time.time()
-	print(after-bef)
+	# print(after-bef)
+
+
+

@@ -22,8 +22,9 @@ controlSocket.bind(('', controlPort))
 while 1:
 	# send sensor data to sensor port of the controller
 	sensorSocket.sendto(bytes('some sensor data', 'ascii'), (controller_name, controller_sensor))
-	print ('sent the sensor data')
+	#print ('sent the sensor data')
 	# recieve control data to actuate the actuator
 	ctrlCmd, controlAddress = controlSocket.recvfrom(2048)
-	print ('Control command as follows:')
-	print (ctrlCmd.decode('ascii'), 'from: ', controlAddress)
+	if ctrlCmd.decode('ascii')!='empty':
+		print ('Control command as follows:')
+		print (ctrlCmd.decode('ascii'), 'from: ', controlAddress)
